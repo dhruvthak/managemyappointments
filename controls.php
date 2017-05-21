@@ -10,12 +10,12 @@
       die('Could not connect: ' . mysqli_error());
    }
    
-   $sql = 'SELECT * FROM tb_appointments';
+   $sql = "SELECT * FROM tb_appointments";
    mysqli_select_db($conn,'appointments_db');
    $retval = mysqli_query($conn,$sql );
    
    if(! $retval ) {
-      die('Could not get data: ' . mysqli_error($conn));
+      die('Could not get the required data. Reason:' . mysqli_error($conn));
    }
    
    while($row = mysqli_fetch_assoc($retval)) {
