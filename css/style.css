@@ -1,3 +1,7 @@
 .row {
     margin-top: 20px;
 }
+
+.new_entry_form {
+    display: none;
+}
