@@ -1,13 +1,12 @@
 <?php
 
+/* Helper Database Class */
 require_once("Database.php");
-//Accept three types of request. if no parameters are passed then do nothing else if parameter exist then ajax call response in json format else if form submission then get all values and process (insert) them.
+
 /*
-
-mode:value
-
-
-
+Handles two modes of query ie., Select and Insert.
+Incase of Select, if query is empty, returns everything(JSON formatted data) else return based on pattern match of query.
+Incase of Insert, insert data into the MySQL and redirect to index page.
 */
 
 /** The name of the database */
@@ -28,19 +27,20 @@ define("DB_TABLE", "tb_appointments");
 
 if(!empty($_POST)){
 
+	// If there is no POST data then do nothing else capture data in associative array.	
+
 	$data = array();
 	foreach ($_POST as $key => $value) {
 		$data[$key] = $value;
 	}
+
 }else{
 
 	return false;
 }
 
-//print_r($data);
 
-
-$dbObj = new Database(DB_HOST,DB_USER,DB_PASSWORD,DB_NAME,DB_TABLE);
+$dbObj = new Database(DB_HOST,DB_USER,DB_PASSWORD,DB_NAME,DB_TABLE); // Calls the helper class constructor
 
 	switch ($data["mode"]) {
 		
@@ -51,11 +51,14 @@ $dbObj = new Database(DB_HOST,DB_USER,DB_PASSWORD,DB_NAME,DB_TABLE);
 			break;
 		
 		case "insert":
-			unset($data["mode"]);
+			unset($data["mode"]); // Not required anymore
+			$data["date"] = $data["date"]." ".$data["time"]; // Concat Date and Time for insertion.
+			unset($data["time"]); // Not required anymore
 			$response = $dbObj->insert($data);
+			header("Location: index.html"); // Redirect browser
 			break;
 	}
 
-	$dbObj-> disconnect();
+	$dbObj-> disconnect(); // Close connection
 
 ?>
