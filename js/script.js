@@ -3,8 +3,8 @@ $(document).ready(function() {
     setCurrentDateRange($("#date_value")); // Set the min for input[type="date"] to today"s date.
 
     // Bind functions to DOM elements
-    $("#switchable_button").click(handleButtonChanges);
-    $("#cancel_form").click(hideForm);
+    $("#switchable_button").click(handleButtonChanges.checkStatus);
+    $("#cancel_form").click(handleButtonChanges.hideForm);
     $("#search").click(getAppointments);
 });
 var getAppointments = function() {
@@ -28,85 +28,140 @@ var getAppointments = function() {
 
 
 };
-var currentstate = false; // flag for handleButtonChanges.
-var handleButtonChanges = function(e) {
 
-    // Handles UI changes along with triggering form validation and submission.
-    if (currentstate === false) {
-        // form is not visible yet. Unhide form.
-        $(e.target).text("ADD");
-        showForm();
-        currentstate = true;
-    } else if (currentstate === true) {
+var handleButtonChanges = (function() {
 
-        // form is visible yet. Hide form.
-        if (formValidation()) {
-            $("#addition_form").submit();
+    var currentstate = false; // flag for handling current state.
+    var formData = $(".new_entry_form");
+
+    var showForm = function() {
+
+        // Function to unhide the form.
+        formData.each(function(i, obj) {
+
+            $(this).show("200");
+
+        });
+    };
+
+    return {
+        checkStatus: function(e) {
+
+            // Handles UI changes along with triggering form validation and submission.
+            if (currentstate === false) {
+                // form is not visible yet. Unhide form.
+                $(e.target).text("ADD");
+                showForm();
+                currentstate = true;
+            } else if (currentstate === true) {
+
+                // form is visible yet. Hide form.
+                if (formValidation.runIt()) {
+                    $("#addition_form").submit();
+                }
+            }
+        },
+        hideForm: function() {
+
+            // Function to hide the form when Cancel button is pressed.
+            $("#switchable_button").text("NEW");
+            formData.each(function(i, obj) {
+
+                $(this).hide("200");
+            });
+            currentstate = false;
         }
     }
-};
-var showForm = function() {
+})();
 
-    // Function to unhide the form.
-    $(".new_entry_form").each(function(i, obj) {
+var formValidation = (function() {
 
-        $(this).show("200");
+    var validateDate = function(elem) {
 
-    });
-};
-var hideForm = function() {
-
-    // Function to hide the form when Cancel button is pressed.
-    $("#switchable_button").text("NEW");
-    $(".new_entry_form").each(function(i, obj) {
-
-        $(this).hide("200");
-    });
-    currentstate = false;
-};
-var formValidation = function() {
-
-    // Validation for all Form fields ie., Date, Time and Description.
-    var isValid = true;
-    $(".input_to_validate").each(function(i) {
-        if (!($(this).val())) {
-
-            // Check if the value is empty.
-            $(this).parents("div.form-group").addClass("has-error");
-            isValid = false;
-            ErrorHandleBar("Please fill all fields and try again.");
+        // Regex date validation along with Date.parse validation.
+        var temp_date = elem.val();
+        var regex = new RegExp("(?:19|20)[0-9]{2}[- /.](?:(?:0[1-9]|1[0-2])[- /.](?:0[1-9]|1[0-9]|2[0-9])|(?:(?!02)(?:0[1-9]|1[0-2])[- /.](?:30))|(?:(?:0[13578]|1[02])-31))");
+        if (Date.parse(temp_date) && regex.test(temp_date)) {
+            return true;
         } else {
-            switch (i) {
-                case 0:
-
-                    // Check if the value of Date field is valid format and is not a Past Date.
-                    if (!validateDate($(this)) || !validatePastDate($(this))) {
-                        isValid = false;
-                        $(this).parents("div.form-group").addClass("has-error");
-                    } else {
-                        $(this).parents("div.form-group").removeClass("has-error").addClass("has-success");
-                    }
-                    break;
-                case 1:
-
-                    // Check if the value of Time field is of valid format.
-                    if (!validateTime($(this))) {
-                        isValid = false;
-                        $(this).parents("div.form-group").addClass("has-error");
-                    } else {
-                        $(this).parents("div.form-group").removeClass("has-error").addClass("has-success");
-                    }
-                    break;
-                case 2:
-
-                    //Remove Error sign since the description has been filled.
-                    $(this).parents("div.form-group").removeClass("has-error").addClass("has-success");
-                    break;
-            }
+            ErrorHandleBar("Please Enter Date in YYYY-MM-DD Format and try again.");
+            return false;
         }
-    });
-    return isValid;
-};
+    };
+    var validatePastDate = function(elem) {
+
+        // Check if the date is not in the Past.
+        var temp_date = elem.val();
+        temp_date = Date.parse(temp_date);
+        var currentdate = Date.parse(getCurrentDate());
+        if (currentdate <= temp_date) {
+            return true;
+        } else {
+            ErrorHandleBar("Date must be " + elem.attr('min') + " or later.");
+            return false;
+        }
+    };
+    var validateTime = function(elem) {
+
+        // Regex to validate Time input
+        var temp_time = elem.val();
+        var regex = new RegExp("(0[0-9]|1[0-9]|2[0-3])(:[0-5][0-9]){1}");
+        if (regex.test(temp_time)) {
+            return true;
+        } else {
+            ErrorHandleBar("Please Enter Time in HH:MM (24-hour) Format and try again.");
+            return false;
+        }
+    };
+
+    return {
+
+        runIt: function() {
+
+            // Validation for all Form fields ie., Date, Time and Description.
+            var isValid = true;
+            $(".input_to_validate").each(function(i) {
+                if (!($(this).val())) {
+
+                    // Check if the value is empty.
+                    $(this).parents("div.form-group").addClass("has-error");
+                    isValid = false;
+                    ErrorHandleBar("Please fill all fields and try again.");
+                } else {
+                    switch (i) {
+                        case 0:
+
+                            // Check if the value of Date field is valid format and is not a Past Date.
+                            if (!validateDate($(this)) || !validatePastDate($(this))) {
+                                isValid = false;
+                                $(this).parents("div.form-group").addClass("has-error");
+                            } else {
+                                $(this).parents("div.form-group").removeClass("has-error").addClass("has-success");
+                            }
+                            break;
+                        case 1:
+
+                            // Check if the value of Time field is of valid format.
+                            if (!validateTime($(this))) {
+                                isValid = false;
+                                $(this).parents("div.form-group").addClass("has-error");
+                            } else {
+                                $(this).parents("div.form-group").removeClass("has-error").addClass("has-success");
+                            }
+                            break;
+                        case 2:
+
+                            //Remove Error sign since the description has been filled.
+                            $(this).parents("div.form-group").removeClass("has-error").addClass("has-success");
+                            break;
+                    }
+                }
+            });
+            return isValid;
+        }
+    }
+})();
+
 var setCurrentDateRange = function(elem) {
 
     // Set the min value to be today"s date on input[type="date"].
@@ -114,43 +169,7 @@ var setCurrentDateRange = function(elem) {
     var dateval = getCurrentDate();
     datefield.attr("min", dateval);
 };
-var validateDate = function(elem) {
 
-    // Regex date validation along with Date.parse validation.
-    var temp_date = elem.val();
-    var regex = new RegExp("(?:19|20)[0-9]{2}[- /.](?:(?:0[1-9]|1[0-2])[- /.](?:0[1-9]|1[0-9]|2[0-9])|(?:(?!02)(?:0[1-9]|1[0-2])[- /.](?:30))|(?:(?:0[13578]|1[02])-31))");
-    if (Date.parse(temp_date) && regex.test(temp_date)) {
-        return true;
-    } else {
-        ErrorHandleBar("Please Enter Date in YYYY-MM-DD Format and try again.");
-        return false;
-    }
-};
-var validatePastDate = function(elem) {
-
-    // Check if the date is not in the Past.
-    var temp_date = elem.val();
-    temp_date = Date.parse(temp_date);
-    var currentdate = Date.parse(getCurrentDate());
-    if (currentdate <= temp_date) {
-        return true;
-    } else {
-        ErrorHandleBar("Date must be " + currentdate + " or later.");
-        return false;
-    }
-};
-var validateTime = function(elem) {
-
-    // Regex to validate Time input
-    var temp_time = elem.val();
-    var regex = new RegExp("(0[0-9]|1[0-9]|2[0-3])(:[0-5][0-9]){1}");
-    if (regex.test(temp_time)) {
-        return true;
-    } else {
-        ErrorHandleBar("Please Enter Time in HH:MM (24-hour) Format and try again.");
-        return false;
-    }
-};
 var getCurrentDate = function() {
 
     // Returns current date in YYYY-MM-DD format.
